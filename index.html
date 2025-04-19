@@ -59,12 +59,35 @@
       padding: 10px 20px;
       font-size: 18px;
     }
+  #winScreen {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: url('win.png') no-repeat center center;
+      background-size: cover;
+      display: none;
+      align-items: center;
+      justify-content: center;
+      flex-direction: column;
+    }
+    #winScreen button {
+      margin: 10px;
+      padding: 10px 20px;
+      font-size: 18px;
+    }
   </style>
 </head>
 <body>
   <div id="menu">
     <button class="menu-button" onclick="startGame()">Start Adventure</button>
     <button class="menu-button" onclick="window.close()">Quit</button>
+  </div>
+  <div id=\"winScreen\">
+    <div id=\"finalScore\" style=\"color: yellow; font-size: 24px; margin-bottom: 20px; text-shadow: 1px 1px 4px black;\"></div>
+    <button onclick="restartGame()">Main Menu</button>
+    <button onclick="window.close()">Quit</button>
   </div>
   <div id="deathScreen">
     <button onclick="restartGame()">Main Menu</button>
@@ -99,6 +122,7 @@
       img.onload = () => {
         imagesLoaded++;
         if (imagesLoaded === totalImages) {
+          checkTrialTile(playerX, playerY);
           render();
         }
       };
@@ -125,27 +149,27 @@
     doorImg.src = "door.png";
 
     const maze = [
-      "############################                   ###",
-      "#1 B     L       B #   B                       4#",
-      "# ##L## # ##### # # ### L ##                   #",
-      "# L   # # # B   # L     #                     ##",
-      "# #BL # # # # # ## # # ## #                   #",
-      "# # # L   #       #   #  #                   #",
-      "#B  # # #L####### # ## #B###                #",
-      "# #         B     #     B                      #",
-      "# ######L###### ### #######                      ##",
-      "#   B         O              #",
-      "# #L####### ##### ####### # ##",
-      "# #     B #         #     #  #",
-      "# # #L########### # L  L#  # #",
-      "# #L    #  B   #           # #",
-      "# # # # L B B # # #L##  B  # #",
-      "# # # #   B   # #   B   #  # #",
-      "# #   #### # ## #L### # # L  #",
-      "# #B    O L    L     L #B#   #",
-      "# # ######### ######L### #L3 #",
-      "#2 B         S             L #",
-      "#############################",
+      "###############################",
+      "#1 B     L       B #   B    4 #",
+      "# ##L## # ##### # # ### L ##  #",
+      "# L   # # # B   # L     #   # #",
+      "# #BL # # # # # ## # # ## #   #",
+      "# # # L   #       #   #  #    #",
+      "#B  # # #L####### # ## #B###  #",
+      "# #         B     #     B     #",
+      "# ######L###### ### ####### # #",
+      "#   B         O               #",
+      "# #L####### ##### ####### # # #",
+      "# #     B #         #     #   #",
+      "# # #L########### # L  L#  #  #",
+      "# #L    #  B   #           #  #",
+      "# # # # L B B # # #L##  B  #  #",
+      "# # # #   B   # #   B   #  #  #",
+      "# #   #### # ## #L### # # L   #",
+      "# #B    O L    L     L #B#    #",
+      "# # ######### ######L### #L3  #",
+      "#2 B           s           L  #",
+      "###############################",
     ].map((row) => row.split(""));
 
     function startGame() {
@@ -224,6 +248,13 @@
       if (maze[playerY][playerX] === "L") {
         clearInterval(gameInterval);
         deathScreen.style.display = "flex";
+      } else if (maze[playerY][playerX] === "W") {
+        clearInterval(gameInterval);
+        const finalScore = Math.max(0, 1500 - (moveCount * 2) - secondsPlayed + bananaCount * 30);
+        document.getElementById("finalScore").innerText = `Score: ${finalScore}
+Moves: ${moveCount}, Time: ${secondsPlayed}s, Bananas: ${bananaCount}`;
+        document.getElementById("winScreen").style.display = "flex";
+      }
       }
 
       overlay.innerHTML = `Bananas: ${bananaCount}<br>Moves: ${moveCount}<br>Time: ${secondsPlayed}s`;
@@ -253,6 +284,113 @@
         }
       }
     });
-  </script>
+  
+    const completedTrials = new Set();
+
+    function showTrialDialog(trialId) {
+  const trials = {
+    '1': {
+      prompt: 'Trial 1: Follow the sound pattern.',
+      optionA: 'Step left, then forward',
+      optionB: 'Run straight ahead',
+      resultA: 'You hear a click. Door unlocks!',
+      resultB: 'A trap is triggered! You died.',
+      failKills: true
+    },
+    '2': {
+      prompt: 'Trial 2: Feel the air flow.',
+      optionA: 'Crawl low',
+      optionB: 'Jump forward',
+      resultA: 'You dodge a dart!',
+      resultB: 'You get hit by a dart! You died.',
+      failKills: true
+    },
+    '3': {
+      prompt: 'Trial 3: Watch the shadows.',
+      optionA: 'Wait and observe',
+      optionB: 'Charge through',
+      resultA: 'You slip by unseen.',
+      resultB: 'You are spotted and fall! You died.',
+      failKills: true
+    },
+    '4': {
+      prompt: 'Trial 4: Mimic the statue.',
+      optionA: 'Raise left arm',
+      optionB: 'Sit down',
+      resultA: 'The door opens silently.',
+      resultB: 'A gate slams shut behind you. You died.',
+      failKills: true
+    }
+  };
+
+  const trial = trials[trialId];
+  if (!trial || completedTrials.has(trialId)) return;
+
+  const choice = confirm(`${trial.prompt}
+A: ${trial.optionA}
+B: ${trial.optionB}
+
+Click OK for A, Cancel for B`);
+  alert(choice ? trial.resultA : trial.resultB);
+
+  if (choice) {
+    completedTrials.add(trialId);
+    if ([...completedTrials].length === 4) {
+      // Unlock final door
+      for (let y = 0; y < maze.length; y++) {
+        for (let x = 0; x < maze[y].length; x++) {
+          if (maze[y][x] === 'W') {
+            maze[y][x] = ' ';
+          }
+        }
+      }
+    }
+  } else if (trial.failKills) {
+    clearInterval(gameInterval);
+    deathScreen.style.display = "flex";
+  }
+},
+        '2': {
+          prompt: 'Trial 2: Feel the air flow.',
+          optionA: 'Crawl low',
+          optionB: 'Jump forward',
+          resultA: 'You dodge a dart!',
+          resultB: 'You get hit by a dart!'
+        },
+        '3': {
+          prompt: 'Trial 3: Watch the shadows.',
+          optionA: 'Wait and observe',
+          optionB: 'Charge through',
+          resultA: 'You slip by unseen.',
+          resultB: 'You are spotted and fall!'
+        },
+        '4': {
+          prompt: 'Trial 4: Mimic the statue.',
+          optionA: 'Raise left arm',
+          optionB: 'Sit down',
+          resultA: 'The door opens silently.',
+          resultB: 'A gate slams shut behind you.'
+        }
+      };
+      const trial = trials[trialId];
+      if (!trial || completedTrials.has(trialId)) return;
+
+      const choice = confirm(`${trial.prompt}
+A: ${trial.optionA}
+B: ${trial.optionB}
+
+Click OK for A, Cancel for B`);
+      alert(choice ? trial.resultA : trial.resultB);
+
+      if (choice) completedTrials.add(trialId);
+    }
+
+    function checkTrialTile(x, y) {
+      const tile = maze[y][x];
+      if (["1", "2", "3", "4"].includes(tile) && !completedTrials.has(tile)) {
+        showTrialDialog(tile);
+      }
+    }
+</script>
 </body>
 </html>
