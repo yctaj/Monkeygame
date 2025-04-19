@@ -289,41 +289,41 @@ Moves: ${moveCount}, Time: ${secondsPlayed}s, Bananas: ${bananaCount}`;
 
     function showTrialDialog(trialId) {
   const trials = {
-  '1': {
-    prompt: 'Trial 1: Follow the sound pattern.',
-    optionA: 'Step left, then forward',
-    optionB: 'Run straight ahead',
-    resultA: 'You hear a click. Door unlocks!',
-    resultB: 'A trap is triggered! You died.',
-    failKills: true
-  },
-  '2': {
-    prompt: 'Trial 2: Feel the air flow.',
-    optionA: 'Crawl low',
-    optionB: 'Jump forward',
-    resultA: 'You dodge a dart!',
-    resultB: 'You get hit by a dart! You died.',
-    failKills: true
-  },
-  '3': {
-    prompt: 'Trial 3: Watch the shadows.',
-    optionA: 'Wait and observe',
-    optionB: 'Charge through',
-    resultA: 'You slip by unseen.',
-    resultB: 'You are spotted and fall! You died.',
-    failKills: true
-  },
-  '4': {
-    prompt: 'Trial 4: Mimic the statue.',
-    optionA: 'Raise left arm',
-    optionB: 'Sit down',
-    resultA: 'The door opens silently.',
-    resultB: 'A gate slams shut behind you. You died.',
-    failKills: true
-  }
-};
+    '1': {
+      prompt: 'Trial 1: Follow the sound pattern.',
+      optionA: 'Step left, then forward',
+      optionB: 'Run straight ahead',
+      resultA: 'You hear a click. Door unlocks!',
+      resultB: 'A trap is triggered! You died.',
+      failKills: true
+    },
+    '2': {
+      prompt: 'Trial 2: Feel the air flow.',
+      optionA: 'Crawl low',
+      optionB: 'Jump forward',
+      resultA: 'You dodge a dart!',
+      resultB: 'You get hit by a dart! You died.',
+      failKills: true
+    },
+    '3': {
+      prompt: 'Trial 3: Watch the shadows.',
+      optionA: 'Wait and observe',
+      optionB: 'Charge through',
+      resultA: 'You slip by unseen.',
+      resultB: 'You are spotted and fall! You died.',
+      failKills: true
+    },
+    '4': {
+      prompt: 'Trial 4: Mimic the statue.',
+      optionA: 'Raise left arm',
+      optionB: 'Sit down',
+      resultA: 'The door opens silently.',
+      resultB: 'A gate slams shut behind you. You died.',
+      failKills: true
+    }
+  };
 
-const trial = trials[trialId];
+  const trial = trials[trialId];
   if (!trial || completedTrials.has(trialId)) return;
 
   const choice = confirm(`${trial.prompt}
@@ -336,7 +336,6 @@ Click OK for A, Cancel for B`);
   if (choice) {
     completedTrials.add(trialId);
     if ([...completedTrials].length === 4) {
-      // Unlock final door
       for (let y = 0; y < maze.length; y++) {
         for (let x = 0; x < maze[y].length; x++) {
           if (maze[y][x] === 'W') {
@@ -349,43 +348,9 @@ Click OK for A, Cancel for B`);
     clearInterval(gameInterval);
     deathScreen.style.display = "flex";
   }
-},
-        '2': {
-          prompt: 'Trial 2: Feel the air flow.',
-          optionA: 'Crawl low',
-          optionB: 'Jump forward',
-          resultA: 'You dodge a dart!',
-          resultB: 'You get hit by a dart!'
-        },
-        '3': {
-          prompt: 'Trial 3: Watch the shadows.',
-          optionA: 'Wait and observe',
-          optionB: 'Charge through',
-          resultA: 'You slip by unseen.',
-          resultB: 'You are spotted and fall!'
-        },
-        '4': {
-          prompt: 'Trial 4: Mimic the statue.',
-          optionA: 'Raise left arm',
-          optionB: 'Sit down',
-          resultA: 'The door opens silently.',
-          resultB: 'A gate slams shut behind you.'
-        }
-      };
-      const trial = trials[trialId];
-      if (!trial || completedTrials.has(trialId)) return;
+}
 
-      const choice = confirm(`${trial.prompt}
-A: ${trial.optionA}
-B: ${trial.optionB}
-
-Click OK for A, Cancel for B`);
-      alert(choice ? trial.resultA : trial.resultB);
-
-      if (choice) completedTrials.add(trialId);
-    }
-
-    function checkTrialTile(x, y) {
+function checkTrialTile(x, y) {(x, y) {
       const tile = maze[y][x];
       if (["1", "2", "3", "4"].includes(tile) && !completedTrials.has(tile)) {
         showTrialDialog(tile);
