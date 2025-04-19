@@ -13,7 +13,6 @@
         }
         canvas {
             display: block;
-            background-color: #000;
         }
         #menu {
             position: absolute;
@@ -56,7 +55,7 @@
     const ctx = canvas.getContext("2d");
     const menu = document.getElementById("menu");
     const overlay = document.getElementById("overlay");
-    
+
     const tileSize = 40;
     let playerX = 0, playerY = 0;
     let monsterX = 1, monsterY = 1;
@@ -64,6 +63,14 @@
     let moveCount = 0;
     let secondsPlayed = 0;
     let gameInterval;
+
+    const images = {};
+    const imageNames = ["wall", "lava", "banana", "hole", "door", "floor", "monkey", "monster"];
+    imageNames.forEach(name => {
+        const img = new Image();
+        img.src = `${name}.png`;
+        images[name] = img;
+    });
 
     const maze = [
         "###############################",
@@ -106,19 +113,30 @@
         render();
     }
 
+    function drawTile(imgName, x, y) {
+        const img = images[imgName];
+        if (img.complete) {
+            ctx.drawImage(img, x * tileSize, y * tileSize, tileSize, tileSize);
+        } else {
+            img.onload = () => ctx.drawImage(img, x * tileSize, y * tileSize, tileSize, tileSize);
+        }
+    }
+
     function render() {
         ctx.clearRect(0, 0, canvas.width, canvas.height);
         for (let y = 0; y < maze.length; y++) {
             for (let x = 0; x < maze[y].length; x++) {
                 const tile = maze[y][x];
-                ctx.fillStyle = tile === '#' ? 'gray' : tile === 'L' ? 'red' : tile === 'B' ? 'yellow' : tile === 'O' ? 'darkgray' : 'black';
-                ctx.fillRect(x * tileSize, y * tileSize, tileSize, tileSize);
+                if (tile === '#') drawTile("wall", x, y);
+                else if (tile === 'L') drawTile("lava", x, y);
+                else if (tile === 'B') drawTile("banana", x, y);
+                else if (tile === 'O') drawTile("hole", x, y);
+                else if (['1', '2', '3', '4', 'W'].includes(tile)) drawTile("door", x, y);
+                else drawTile("floor", x, y);
             }
         }
-        ctx.fillStyle = "green";
-        ctx.fillRect(playerX * tileSize + 5, playerY * tileSize + 5, 30, 30);
-        ctx.fillStyle = "purple";
-        ctx.fillRect(monsterX * tileSize + 5, monsterY * tileSize + 5, 30, 30);
+        ctx.drawImage(images["monkey"], playerX * tileSize + 5, playerY * tileSize + 5, 30, 30);
+        ctx.drawImage(images["monster"], monsterX * tileSize + 5, monsterY * tileSize + 5, 30, 30);
 
         overlay.innerHTML = `Bananas: ${bananaCount}<br>Moves: ${moveCount}<br>Time: ${secondsPlayed}s`;
     }
