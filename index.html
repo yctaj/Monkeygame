@@ -350,7 +350,7 @@ Click OK for A, Cancel for B`);
   }
 }
 
-function checkTrialTile(x, y) {(x, y) {
+function checkTrialTile(x, y) {
       const tile = maze[y][x];
       if (["1", "2", "3", "4"].includes(tile) && !completedTrials.has(tile)) {
         showTrialDialog(tile);
