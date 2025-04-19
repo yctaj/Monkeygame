@@ -1,90 +1,142 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <title>Monkey Island: The Forbidden Temple</title>
-  <style>
-    canvas { background: #333; display: block; margin: 0 auto; }
-    body { margin: 0; font-family: sans-serif; text-align: center; color: white; background-color: #111; }
-  </style>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Monkey Island: The Forbidden Temple</title>
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            overflow: hidden;
+            font-family: Arial, sans-serif;
+        }
+        canvas {
+            display: block;
+            background-color: #000;
+        }
+        #menu {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: url('start.png') no-repeat center center;
+            background-size: cover;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: flex-end;
+            padding: 20px;
+        }
+        .menu-button {
+            padding: 10px 20px;
+            font-size: 18px;
+            margin: 10px;
+            cursor: pointer;
+        }
+        #overlay {
+            position: absolute;
+            top: 10px;
+            left: 10px;
+            color: yellow;
+            font-weight: bold;
+        }
+    </style>
 </head>
 <body>
-  <canvas id="gameCanvas" width="640" height="480"></canvas>
-
-  <script>
+<div id="menu">
+    <button class="menu-button" onclick="startGame()">Start Adventure</button>
+    <button class="menu-button" onclick="window.close()">Quit</button>
+</div>
+<canvas id="gameCanvas" width="1180" height="895"></canvas>
+<div id="overlay"></div>
+<script>
     const canvas = document.getElementById("gameCanvas");
     const ctx = canvas.getContext("2d");
+    const menu = document.getElementById("menu");
+    const overlay = document.getElementById("overlay");
+    
+    const tileSize = 40;
+    let playerX = 0, playerY = 0;
+    let monsterX = 1, monsterY = 1;
+    let bananaCount = 0;
+    let moveCount = 0;
+    let secondsPlayed = 0;
+    let gameInterval;
 
-    const tileSize = 32;
-    const rows = 15;
-    const cols = 20;
+    const maze = [
+        "###############################",
+        "#1 B     L       B #   B    4#",
+        "# ##L## # ##### # # ### L ## #",
+        "# L   # # # B   # L     #   ##",
+        "# #BL # # # # # ## # # ## # #",
+        "# # # L   #       #   #  #   #",
+        "#B  # # #L####### # ## #B### #",
+        "# #         B     #     B    #",
+        "# ######L###### ### ####### ##",
+        "#   B         O              #",
+        "# #L####### ##### ####### # ##",
+        "# #     B #         #     #  #",
+        "# # #L########### # L  L#  # #",
+        "# #L    #  B   #           # #",
+        "# # # # L B B # # #L##  B  # #",
+        "# # # #   B   # #   B   #  # #",
+        "# #   #### # ## #L### # # L #",
+        "# #B    O L    L     L #B#  #",
+        "# # ######### ######L### #L3#",
+        "#2 B                       L #",
+        "#############################"
+    ].map(row => row.split(""));
 
-    let gameStarted = false;
-
-    let player = { x: 1, y: 1 };
-    let monster = { x: 10, y: 10 };
-
-    function drawTitleScreen() {
-      ctx.fillStyle = "#111";
-      ctx.fillRect(0, 0, canvas.width, canvas.height);
-      ctx.fillStyle = "white";
-      ctx.font = "36px Arial";
-      ctx.fillText("Monkey Island", 180, 200);
-      ctx.font = "24px Arial";
-      ctx.fillText("Press ENTER to Start", 200, 260);
-    }
-
-    function drawGame() {
-      ctx.clearRect(0, 0, canvas.width, canvas.height);
-
-      // Draw background
-      for (let row = 0; row < rows; row++) {
-        for (let col = 0; col < cols; col++) {
-          ctx.fillStyle = "#444";
-          ctx.fillRect(col * tileSize, row * tileSize, tileSize - 1, tileSize - 1);
+    function startGame() {
+        menu.style.display = "none";
+        gameInterval = setInterval(() => {
+            secondsPlayed++;
+            render();
+        }, 1000);
+        for (let y = 0; y < maze.length; y++) {
+            for (let x = 0; x < maze[y].length; x++) {
+                if (maze[y][x] === 'S') {
+                    playerX = x;
+                    playerY = y;
+                }
+            }
         }
-      }
-
-      // Draw player
-      ctx.fillStyle = "yellow";
-      ctx.fillRect(player.x * tileSize, player.y * tileSize, tileSize - 4, tileSize - 4);
-
-      // Draw monster
-      ctx.fillStyle = "red";
-      ctx.fillRect(monster.x * tileSize, monster.y * tileSize, tileSize - 4, tileSize - 4);
+        render();
     }
 
-    function moveMonster() {
-      const dx = Math.floor(Math.random() * 3) - 1;
-      const dy = Math.floor(Math.random() * 3) - 1;
-      monster.x = Math.max(0, Math.min(cols - 1, monster.x + dx));
-      monster.y = Math.max(0, Math.min(rows - 1, monster.y + dy));
+    function render() {
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        for (let y = 0; y < maze.length; y++) {
+            for (let x = 0; x < maze[y].length; x++) {
+                const tile = maze[y][x];
+                ctx.fillStyle = tile === '#' ? 'gray' : tile === 'L' ? 'red' : tile === 'B' ? 'yellow' : tile === 'O' ? 'darkgray' : 'black';
+                ctx.fillRect(x * tileSize, y * tileSize, tileSize, tileSize);
+            }
+        }
+        ctx.fillStyle = "green";
+        ctx.fillRect(playerX * tileSize + 5, playerY * tileSize + 5, 30, 30);
+        ctx.fillStyle = "purple";
+        ctx.fillRect(monsterX * tileSize + 5, monsterY * tileSize + 5, 30, 30);
+
+        overlay.innerHTML = `Bananas: ${bananaCount}<br>Moves: ${moveCount}<br>Time: ${secondsPlayed}s`;
     }
 
-    function gameLoop() {
-      if (gameStarted) {
-        moveMonster();
-        drawGame();
-      } else {
-        drawTitleScreen();
-      }
-    }
-
-    setInterval(gameLoop, 500);
-
-    document.addEventListener("keydown", (e) => {
-      if (!gameStarted && e.key === "Enter") {
-        gameStarted = true;
-        return;
-      }
-
-      if (gameStarted) {
-        if (e.key === "ArrowUp") player.y = Math.max(0, player.y - 1);
-        if (e.key === "ArrowDown") player.y = Math.min(rows - 1, player.y + 1);
-        if (e.key === "ArrowLeft") player.x = Math.max(0, player.x - 1);
-        if (e.key === "ArrowRight") player.x = Math.min(cols - 1, player.x + 1);
-      }
+    window.addEventListener("keydown", (e) => {
+        const dirs = { ArrowUp: [0, -1], ArrowDown: [0, 1], ArrowLeft: [-1, 0], ArrowRight: [1, 0] };
+        if (dirs[e.key]) {
+            const [dx, dy] = dirs[e.key];
+            const nx = playerX + dx;
+            const ny = playerY + dy;
+            if (maze[ny] && maze[ny][nx] && maze[ny][nx] !== '#') {
+                playerX = nx;
+                playerY = ny;
+                moveCount++;
+                render();
+            }
+        }
     });
-  </script>
+</script>
 </body>
 </html>
