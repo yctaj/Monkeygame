@@ -1,160 +1,258 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Monkey Island: The Forbidden Temple</title>
-    <style>
-        body {
-            margin: 0;
-            padding: 0;
-            overflow: hidden;
-            font-family: Arial, sans-serif;
-        }
-        canvas {
-            display: block;
-        }
-        #menu {
-            position: absolute;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background: url('start.png') no-repeat center center;
-            background-size: cover;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: flex-end;
-            padding: 20px;
-        }
-        .menu-button {
-            padding: 10px 20px;
-            font-size: 18px;
-            margin: 10px;
-            cursor: pointer;
-        }
-        #overlay {
-            position: absolute;
-            top: 10px;
-            left: 10px;
-            color: yellow;
-            font-weight: bold;
-        }
-    </style>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Monkey Island: The Forbidden Temple</title>
+  <style>
+    body {
+      margin: 0;
+      padding: 0;
+      overflow: hidden;
+      font-family: Arial, sans-serif;
+    }
+    canvas {
+      display: block;
+    }
+    #menu {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: url('start.png') no-repeat center center;
+      background-size: cover;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: flex-end;
+      padding: 20px;
+    }
+    .menu-button {
+      padding: 10px 20px;
+      font-size: 18px;
+      margin: 10px;
+      cursor: pointer;
+    }
+    #overlay {
+      position: absolute;
+      top: 10px;
+      left: 10px;
+      color: yellow;
+      font-weight: bold;
+    }
+    #deathScreen {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: url('dead.png') no-repeat center center;
+      background-size: cover;
+      display: none;
+      align-items: center;
+      justify-content: center;
+      flex-direction: column;
+    }
+    #deathScreen button {
+      margin: 10px;
+      padding: 10px 20px;
+      font-size: 18px;
+    }
+  </style>
 </head>
 <body>
-<div id="menu">
+  <div id="menu">
     <button class="menu-button" onclick="startGame()">Start Adventure</button>
     <button class="menu-button" onclick="window.close()">Quit</button>
-</div>
-<canvas id="gameCanvas" width="1180" height="895"></canvas>
-<div id="overlay"></div>
-<script>
+  </div>
+  <div id="deathScreen">
+    <button onclick="restartGame()">Main Menu</button>
+    <button onclick="window.close()">Quit</button>
+  </div>
+  <canvas id="gameCanvas" width="1180" height="895"></canvas>
+  <div id="overlay"></div>
+  <script>
     const canvas = document.getElementById("gameCanvas");
     const ctx = canvas.getContext("2d");
     const menu = document.getElementById("menu");
     const overlay = document.getElementById("overlay");
+    const deathScreen = document.getElementById("deathScreen");
 
     const tileSize = 40;
-    let playerX = 0, playerY = 0;
-    let monsterX = 1, monsterY = 1;
+    let playerX = 0,
+      playerY = 0;
+    let monsterX = 1,
+      monsterY = 1;
     let bananaCount = 0;
     let moveCount = 0;
     let secondsPlayed = 0;
     let gameInterval;
+    let imagesLoaded = 0;
 
     const images = {};
-    const imageNames = ["wall", "lava", "banana", "hole", "door", "floor", "monkey", "monster"];
-    imageNames.forEach(name => {
-        const img = new Image();
-        img.src = `${name}.png`;
-        images[name] = img;
+    const imageNames = ["wall", "lava", "banana", "hole", "floor", "monkey", "monster"];
+    const totalImages = imageNames.length + 1; // +1 for fallback door tile
+
+    imageNames.forEach((name) => {
+      const img = new Image();
+      img.onload = () => {
+        imagesLoaded++;
+        if (imagesLoaded === totalImages) {
+          render();
+        }
+      };
+      img.onerror = () => {
+        console.error(`Failed to load image: ${name}.png`);
+      };
+      img.src = `${name}.png`;
+      images[name] = img;
     });
 
+    // Door uses floor tile as fallback if not available
+    const doorImg = new Image();
+    doorImg.onload = () => {
+      imagesLoaded++;
+      images["door"] = doorImg;
+      if (imagesLoaded === totalImages) render();
+    };
+    doorImg.onerror = () => {
+      console.warn("door.png not found. Using floor.png as fallback.");
+      images["door"] = images["floor"];
+      imagesLoaded++;
+      if (imagesLoaded === totalImages) render();
+    };
+    doorImg.src = "door.png";
+
     const maze = [
-        "###############################",
-        "#1 B     L       B #   B    4#",
-        "# ##L## # ##### # # ### L ## #",
-        "# L   # # # B   # L     #   ##",
-        "# #BL # # # # # ## # # ## # #",
-        "# # # L   #       #   #  #   #",
-        "#B  # # #L####### # ## #B### #",
-        "# #         B     #     B    #",
-        "# ######L###### ### ####### ##",
-        "#   B         O              #",
-        "# #L####### ##### ####### # ##",
-        "# #     B #         #     #  #",
-        "# # #L########### # L  L#  # #",
-        "# #L    #  B   #           # #",
-        "# # # # L B B # # #L##  B  # #",
-        "# # # #   B   # #   B   #  # #",
-        "# #   #### # ## #L### # # L  #",
-        "# #B    O L    L     L #B#   #",
-        "# # ######### ######L### #L3 #",
-        "#2 B         S             L #",
-        "#############################"
-    ].map(row => row.split(""));
+      "###############################",
+      "#1 B     L       B #   B    4#",
+      "# ##L## # ##### # # ### L ## #",
+      "# L   # # # B   # L     #   ##",
+      "# #BL # # # # # ## # # ## # #",
+      "# # # L   #       #   #  #   #",
+      "#B  # # #L####### # ## #B### #",
+      "# #         B     #     B    #",
+      "# ######L###### ### ####### ##",
+      "#   B         O              #",
+      "# #L####### ##### ####### # ##",
+      "# #     B #         #     #  #",
+      "# # #L########### # L  L#  # #",
+      "# #L    #  B   #           # #",
+      "# # # # L B B # # #L##  B  # #",
+      "# # # #   B   # #   B   #  # #",
+      "# #   #### # ## #L### # # L #",
+      "# #B    O L    L     L #B#  #",
+      "# # ######### ######L### #L3#",
+      "#2 B                       L #",
+      "#############################",
+    ].map((row) => row.split(""));
 
     function startGame() {
-        menu.style.display = "none";
-        gameInterval = setInterval(() => {
-            secondsPlayed++;
-            render();
-        }, 1000);
-        for (let y = 0; y < maze.length; y++) {
-            for (let x = 0; x < maze[y].length; x++) {
-                if (maze[y][x] === 'S') {
-                    playerX = x;
-                    playerY = y;
-                }
-            }
+      menu.style.display = "none";
+      deathScreen.style.display = "none";
+      for (let y = 0; y < maze.length; y++) {
+        for (let x = 0; x < maze[y].length; x++) {
+          if (maze[y][x] === "S") {
+            playerX = x;
+            playerY = y;
+          }
         }
+      }
+      gameInterval = setInterval(() => {
+        secondsPlayed++;
+        moveMonster();
         render();
+      }, 500);
+      render();
+    }
+
+    function restartGame() {
+      playerX = 0;
+      playerY = 0;
+      bananaCount = 0;
+      moveCount = 0;
+      secondsPlayed = 0;
+      startGame();
     }
 
     function drawTile(imgName, x, y) {
-        const img = images[imgName];
-        if (img.complete) {
-            ctx.drawImage(img, x * tileSize, y * tileSize, tileSize, tileSize);
-        } else {
-            img.onload = () => ctx.drawImage(img, x * tileSize, y * tileSize, tileSize, tileSize);
-        }
+      const img = images[imgName];
+      if (img && img.complete && img.naturalWidth !== 0) {
+        ctx.drawImage(img, x * tileSize, y * tileSize, tileSize, tileSize);
+      }
+    }
+
+    function moveMonster() {
+      const dx = playerX - monsterX;
+      const dy = playerY - monsterY;
+      if (Math.abs(dx) > Math.abs(dy)) {
+        if (dx > 0 && maze[monsterY][monsterX + 1] !== "#") monsterX++;
+        else if (dx < 0 && maze[monsterY][monsterX - 1] !== "#") monsterX--;
+      } else {
+        if (dy > 0 && maze[monsterY + 1][monsterX] !== "#") monsterY++;
+        else if (dy < 0 && maze[monsterY - 1][monsterX] !== "#") monsterY--;
+      }
+      if (playerX === monsterX && playerY === monsterY) {
+        clearInterval(gameInterval);
+        deathScreen.style.display = "flex";
+      }
     }
 
     function render() {
-        ctx.clearRect(0, 0, canvas.width, canvas.height);
-        for (let y = 0; y < maze.length; y++) {
-            for (let x = 0; x < maze[y].length; x++) {
-                const tile = maze[y][x];
-                if (tile === '#') drawTile("wall", x, y);
-                else if (tile === 'L') drawTile("lava", x, y);
-                else if (tile === 'B') drawTile("banana", x, y);
-                else if (tile === 'O') drawTile("hole", x, y);
-                else if (['1', '2', '3', '4', 'W'].includes(tile)) drawTile("door", x, y);
-                else drawTile("floor", x, y);
-            }
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      for (let y = 0; y < maze.length; y++) {
+        for (let x = 0; x < maze[y].length; x++) {
+          const tile = maze[y][x];
+          if (tile === "#") drawTile("wall", x, y);
+          else if (tile === "L") drawTile("lava", x, y);
+          else if (tile === "B") drawTile("banana", x, y);
+          else if (tile === "O") drawTile("hole", x, y);
+          else if (["1", "2", "3", "4", "W"].includes(tile)) drawTile("door", x, y);
+          else drawTile("floor", x, y);
         }
-        ctx.drawImage(images["monkey"], playerX * tileSize + 5, playerY * tileSize + 5, 30, 30);
-        ctx.drawImage(images["monster"], monsterX * tileSize + 5, monsterY * tileSize + 5, 30, 30);
+      }
 
-        overlay.innerHTML = `Bananas: ${bananaCount}<br>Moves: ${moveCount}<br>Time: ${secondsPlayed}s`;
+      if (maze[playerY][playerX] === "B") {
+        maze[playerY][playerX] = " ";
+        bananaCount++;
+      }
+
+      drawTile("monkey", playerX, playerY);
+      drawTile("monster", monsterX, monsterY);
+
+      if (maze[playerY][playerX] === "L") {
+        clearInterval(gameInterval);
+        deathScreen.style.display = "flex";
+      }
+
+      overlay.innerHTML = `Bananas: ${bananaCount}<br>Moves: ${moveCount}<br>Time: ${secondsPlayed}s`;
     }
 
     window.addEventListener("keydown", (e) => {
-        const dirs = { ArrowUp: [0, -1], ArrowDown: [0, 1], ArrowLeft: [-1, 0], ArrowRight: [1, 0] };
-        if (dirs[e.key]) {
-            const [dx, dy] = dirs[e.key];
-            const nx = playerX + dx;
-            const ny = playerY + dy;
-            if (maze[ny] && maze[ny][nx] && maze[ny][nx] !== '#') {
-                playerX = nx;
-                playerY = ny;
-                moveCount++;
-                render();
-            }
+      const dirs = {
+        ArrowUp: [0, -1],
+        ArrowDown: [0, 1],
+        ArrowLeft: [-1, 0],
+        ArrowRight: [1, 0],
+      };
+      if (dirs[e.key]) {
+        const [dx, dy] = dirs[e.key];
+        const nx = playerX + dx;
+        const ny = playerY + dy;
+        if (maze[ny] && maze[ny][nx] && maze[ny][nx] !== "#") {
+          playerX = nx;
+          playerY = ny;
+          moveCount++;
+          if (playerX === monsterX && playerY === monsterY) {
+            clearInterval(gameInterval);
+            deathScreen.style.display = "flex";
+            return;
+          }
+          render();
         }
+      }
     });
-</script>
+  </script>
 </body>
 </html>
